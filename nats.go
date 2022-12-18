@@ -2,53 +2,35 @@ package nats
 
 import (
 	"github.com/coredns/coredns/plugin"
-	"github.com/miekg/dns"
 	"github.com/nats-io/nats.go"
 )
 
-type NATS struct {
-	URL    string
-	Bucket string
-	KV     *nats.KeyValue
-	Next   plugin.Handler
+type JetStream struct {
+	natsURL    string
+	bucketName string
+	kvBucket   nats.KeyValue
+	jetStream  nats.JetStreamContext
+	Next       plugin.Handler
 }
 
-func (handler *NATS) A(name string, record A_Record) (answers, extras []dns.RR) {
-	if record.Ip == nil {
-		return
-	}
-
-	r := new(dns.A)
-	r.Hdr = dns.RR_Header{
-		Name:   dns.Fqdn(name),
-		Rrtype: dns.TypeA,
-		Class:  dns.ClassINET,
-		Ttl:    360,
-	}
-	r.A = record.Ip
-	answers = append(answers, r)
-
-	return
-
-}
-
-func (handler *NATS) Connect() error {
-	nc, err := nats.Connect(handler.URL)
+func (js *JetStream) Connect() error {
+	nc, err := nats.Connect(js.natsURL)
 	if err != nil {
 		return err
 	}
 
-	js, err := nc.JetStream()
+	jetStream, err := nc.JetStream()
 	if err != nil {
 		return err
 	}
 
-	kv, err := js.KeyValue(handler.Bucket)
+	kvBucket, err := jetStream.KeyValue(js.bucketName)
 	if err != nil {
 		return err
 	}
 
-	handler.KV = &kv
+	js.jetStream = jetStream
+	js.kvBucket = kvBucket
 
 	return nil
 

@@ -22,8 +22,8 @@ func setup(c *caddy.Controller) error {
 	return nil
 }
 
-func natsParse(c *caddy.Controller) (*NATS, error) {
-	nats := NATS{}
+func natsParse(c *caddy.Controller) (*JetStream, error) {
+	js := new(JetStream)
 
 	c.Next()
 	if c.NextBlock() {
@@ -31,17 +31,17 @@ func natsParse(c *caddy.Controller) (*NATS, error) {
 			switch c.Val() {
 			case "url":
 				if !c.NextArg() {
-					return &nats, c.ArgErr()
+					return js, c.ArgErr()
 				}
-				nats.URL = c.Val()
+				js.natsURL = c.Val()
 			case "bucket":
 				if !c.NextArg() {
-					return &nats, c.ArgErr()
+					return js, c.ArgErr()
 				}
-				nats.Bucket = c.Val()
+				js.bucketName = c.Val()
 			default:
 				if c.Val() != "}" {
-					return &nats, c.Errf("unknown property %s", c.Val())
+					return js, c.Errf("unknown property %s", c.Val())
 				}
 			}
 			if !c.Next() {
@@ -50,7 +50,7 @@ func natsParse(c *caddy.Controller) (*NATS, error) {
 		}
 	}
 
-	err := nats.Connect()
+	err := js.Connect()
 
-	return &nats, err
+	return js, err
 }
